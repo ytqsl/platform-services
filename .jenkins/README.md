@@ -36,7 +36,6 @@ const phases = {
 ```
 
 # create secrets template
-(TODO: what access needed for the access token)
 ```
 oc -n e5imao-tools process -f 'openshift/secrets.json' -p 'GH_USERNAME=<username>' -p 'GH_PASSWORD=<personal_access_token>' | oc  -n e5imao-tools create -f -
 ```
