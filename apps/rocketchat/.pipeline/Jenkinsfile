@@ -1,0 +1,76 @@
+pipeline {
+    agent none
+    options {
+        disableResume()
+    }
+    stages {
+        stage('Build') {
+            agent { label 'build' }
+            /*
+            Not doing builds, but need to check if changes are happening in the app/rocketchat/
+            if yes, continue to deployment
+            if not, terminate and delete the build
+
+            TODO: test is `grep '^apps/rocketchat/'` is correct
+            */
+            steps {
+                script {
+                    def filesInThisCommitAsString = sh(script:"git diff --name-only HEAD~1..HEAD | grep '^apps/rocketchat/' || echo -n ''", returnStatus: false, returnStdout: true).trim()
+                    def hasChangesInPath = (filesInThisCommitAsString.length() > 0)
+                    echo "${filesInThisCommitAsString}"
+                    // no changes, delete build:
+                    if (!currentBuild.rawBuild.getCauses()[0].toString().contains('UserIdCause') && !hasChangesInPath){
+                        currentBuild.rawBuild.delete()
+                        error("No changes detected in the path ('^.jenkins/')")
+                    }
+                }
+                // Detect changes, continue with job:
+                echo "Aborting all running jobs ..."
+                script {
+                    abortAllPreviousBuildInProgress(currentBuild)
+                }
+                // TODO: remove the command since we are not doing build:
+                // echo "Building ..."
+                // sh "cd apps/rocketchat/.pipeline && ./npmw build -- --pr=${CHANGE_ID}"
+            }
+        }
+        stage('Deploy (DEV)') {
+            agent { label 'deploy' }
+            input {
+                message "Should we continue with deployment to DEV?"
+                ok "Yes!"
+                submitter "authenticated"
+            }
+            steps {
+                // TODO: update directory if needed
+                // the ./npmw scripts is specified in the .pipeline/package.json
+                echo "Deploying ..."
+                sh "cd apps/rocketchat/.pipeline && ./npmw deploy -- --pr=${CHANGE_ID} --env=dev"
+            }
+        }
+        stage('Deploy (TEST)') {
+            agent { label 'deploy' }
+            input {
+                message "Should we continue with deployment to TEST?"
+                ok "Yes!"
+                submitter "authenticated"
+            }
+            steps {
+                echo "Deploying ..."
+                sh "cd apps/rocketchat/.pipeline && ./npmw deploy -- --pr=${CHANGE_ID} --env=test"
+            }
+        }
+        stage('Deploy (PROD)') {
+            agent { label 'deploy' }
+            input {
+                message "Should we continue with deployment to PROD? Have you notified the community?"
+                ok "Yes!"
+                submitter "authenticated"
+            }
+            steps {
+                echo "Deploying ..."
+                sh "cd apps/rocketchat/.pipeline && ./npmw deploy -- --pr=${CHANGE_ID} --env=prod"
+            }
+        }
+    }
+}
