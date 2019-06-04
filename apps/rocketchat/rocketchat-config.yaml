@@ -37,6 +37,9 @@ data:
   OVERWRITE_SETTING_Accounts_OAuth_Custom-Keycloak-id: "rocket-chat-test"
   OVERWRITE_SETTING_Accounts_OAuth_Custom-Keycloak-secret: "63cb2a21-f115-4750-be21-aaa26bb95726"
   OVERWRITE_SETTING_Accounts_OAuth_Custom-Keycloak-button_label_text: "Login"
+  #Enable Graphql
+  OVERWRITE_SETTING_Graphql_Enabled: "True"
+  OVERWRITE_SETTING_Graphql_CORS: "True"
 
 # Rooms
 # DevOps Alerts
